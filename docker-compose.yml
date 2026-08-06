@@ -1,13 +1,4 @@
 services:
-  redis:
-    image: redis:7-alpine
-    ports:
-      - "6379:6379"
-    volumes:
-      - redis_data:/data
-    restart: unless-stopped
-
-  # Optional local Postgres when Supabase is unavailable
   postgres:
     image: postgres:16-alpine
     profiles: ["local-db"]
@@ -16,9 +7,17 @@ services:
       POSTGRES_PASSWORD: herdshare
       POSTGRES_DB: herdshare
     ports:
-      - "5432:5432"
+      - "5433:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
+    restart: unless-stopped
+
+  redis:
+    image: redis:7-alpine
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_data:/data
     restart: unless-stopped
 
   api:

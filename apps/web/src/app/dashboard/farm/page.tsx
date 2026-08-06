@@ -10,6 +10,9 @@ type Farm = {
   name: string;
   status: string;
   city: string;
+  province?: string;
+  description?: string | null;
+  imageUrl?: string | null;
   animals: {
     id: string;
     name: string;
@@ -17,9 +20,19 @@ type Farm = {
     availableShares: number;
     pricePkr: string | number;
     status: string;
+    imageUrl?: string | null;
   }[];
   expenses: { id: string; category: string; amountPkr: string | number; note?: string }[];
 };
+
+async function fileToDataUrl(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(String(reader.result));
+    reader.onerror = () => reject(new Error("Could not read image"));
+    reader.readAsDataURL(file);
+  });
+}
 
 export default function FarmDashboard() {
   const [farm, setFarm] = useState<Farm | null>(null);
@@ -31,6 +44,8 @@ export default function FarmDashboard() {
   } | null>(null);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const [farmPreview, setFarmPreview] = useState("");
+  const [animalPreview, setAnimalPreview] = useState("");
 
   async function load() {
     const auth = loadAuth();
@@ -59,6 +74,11 @@ export default function FarmDashboard() {
     const auth = loadAuth();
     if (!auth) return;
     const fd = new FormData(e.currentTarget);
+    const file = fd.get("imageFile") as File | null;
+    let imageUrl = String(fd.get("imageUrl") || "");
+    if (file && file.size > 0) {
+      imageUrl = await fileToDataUrl(file);
+    }
     const res = await apiFetch("/farms", {
       method: "POST",
       token: auth.accessToken,
@@ -70,13 +90,14 @@ export default function FarmDashboard() {
         city: fd.get("city"),
         province: fd.get("province"),
         capacity: Number(fd.get("capacity") || 50),
+        imageUrl: imageUrl || undefined,
       }),
     });
     if (!res.success) {
       setError(res.error?.message || "Could not create farm");
       return;
     }
-    setMessage("Farm submitted for verification.");
+    setMessage("Farm submitted for admin verification.");
     load();
   }
 
@@ -85,8 +106,15 @@ export default function FarmDashboard() {
     setError("");
     const auth = loadAuth();
     if (!auth || !farm) return;
-    const fd = new FormData(e.currentTarget);
+    const form = e.currentTarget;
+    const fd = new FormData(form);
     const price = Number(fd.get("pricePkr"));
+    const shares = Number(fd.get("totalShares") || 1);
+    const file = fd.get("imageFile") as File | null;
+    let imageUrl = String(fd.get("imageUrl") || "");
+    if (file && file.size > 0) {
+      imageUrl = await fileToDataUrl(file);
+    }
     const res = await apiFetch("/animals", {
       method: "POST",
       token: auth.accessToken,
@@ -95,21 +123,24 @@ export default function FarmDashboard() {
         farmId: farm.id,
         name: fd.get("name"),
         species: fd.get("species"),
+        breed: fd.get("breed") || undefined,
         ageMonths: Number(fd.get("ageMonths")),
+        weightKg: fd.get("weightKg") ? Number(fd.get("weightKg")) : undefined,
         pricePkr: price,
-        sharePricePkr: price,
-        totalShares: 1,
+        sharePricePkr: Number(fd.get("sharePricePkr") || price / shares),
+        totalShares: shares,
         expectedRoiPercent: Number(fd.get("expectedRoiPercent") || 15),
         description: fd.get("description"),
-        imageUrl: fd.get("imageUrl") || undefined,
+        imageUrl: imageUrl || undefined,
       }),
     });
     if (!res.success) {
       setError(res.error?.message || "Could not list animal");
       return;
     }
-    setMessage("Animal listed.");
-    (e.target as HTMLFormElement).reset();
+    setMessage("Animal listed on the marketplace.");
+    setAnimalPreview("");
+    form.reset();
     load();
   }
 
@@ -133,6 +164,7 @@ export default function FarmDashboard() {
       return;
     }
     setMessage("Expense logged.");
+    (e.target as HTMLFormElement).reset();
     load();
   }
 
@@ -154,23 +186,31 @@ export default function FarmDashboard() {
   return (
     <DashboardShell role="FARM_OWNER">
       <h1>Farm dashboard</h1>
+      <p className="meta">
+        Register your farm, upload photos, list goats/sheep/cows with price and
+        description, then post care updates for investors.
+      </p>
       {message ? <p className="success">{message}</p> : null}
       {error ? <p className="error">{error}</p> : null}
 
       {!farm ? (
         <div className="panel">
-          <h2 style={{ marginTop: 0 }}>Register your farm</h2>
+          <h2 style={{ marginTop: 0 }}>Register farm profile</h2>
           <form className="form" onSubmit={createFarm}>
             <label>
               Farm name
-              <input name="name" required />
+              <input name="name" required placeholder="Green Pastures Farm" />
             </label>
             <label>
               Description
-              <textarea name="description" rows={3} />
+              <textarea
+                name="description"
+                rows={3}
+                placeholder="Tell investors about verification, care standards, and location."
+              />
             </label>
             <label>
-              Location
+              Location / address
               <input name="location" required />
             </label>
             <label>
@@ -182,9 +222,33 @@ export default function FarmDashboard() {
               <input name="province" required defaultValue="Punjab" />
             </label>
             <label>
-              Capacity
+              Capacity (animals)
               <input name="capacity" type="number" defaultValue={50} />
             </label>
+            <label>
+              Cover image URL (optional)
+              <input name="imageUrl" type="url" placeholder="https://…" />
+            </label>
+            <label>
+              Or upload cover image
+              <input
+                name="imageFile"
+                type="file"
+                accept="image/*"
+                onChange={async (ev) => {
+                  const f = ev.target.files?.[0];
+                  if (f) setFarmPreview(await fileToDataUrl(f));
+                }}
+              />
+            </label>
+            {farmPreview ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={farmPreview}
+                alt="Farm preview"
+                style={{ width: "100%", maxHeight: 220, objectFit: "cover", borderRadius: 12 }}
+              />
+            ) : null}
             <button className="btn btn-primary">Submit for verification</button>
           </form>
         </div>
@@ -210,9 +274,27 @@ export default function FarmDashboard() {
           </div>
 
           <div className="panel" style={{ marginBottom: "1rem" }}>
-            <h2 style={{ marginTop: 0, fontSize: "1.25rem" }}>{farm.name}</h2>
-            <p className="meta">{farm.city}</p>
-            <table className="table">
+            <div className="grid grid-2" style={{ alignItems: "center", gap: "1rem" }}>
+              {farm.imageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={farm.imageUrl}
+                  alt={farm.name}
+                  style={{ width: "100%", height: 180, objectFit: "cover", borderRadius: 12 }}
+                />
+              ) : (
+                <div className="card-media" style={{ minHeight: 180 }} />
+              )}
+              <div>
+                <h2 style={{ marginTop: 0, fontSize: "1.25rem" }}>{farm.name}</h2>
+                <p className="meta">
+                  {farm.city}
+                  {farm.province ? `, ${farm.province}` : ""}
+                </p>
+                <p>{farm.description}</p>
+              </div>
+            </div>
+            <table className="table" style={{ marginTop: "1rem" }}>
               <thead>
                 <tr>
                   <th>Animal</th>
@@ -230,7 +312,11 @@ export default function FarmDashboard() {
                     <td>{a.availableShares}</td>
                     <td>{formatPkr(a.pricePkr)}</td>
                     <td>
-                      <button className="btn btn-secondary" onClick={() => postUpdate(a.id)}>
+                      <button
+                        className="btn btn-secondary"
+                        type="button"
+                        onClick={() => postUpdate(a.id)}
+                      >
                         Post update
                       </button>
                     </td>
@@ -247,7 +333,7 @@ export default function FarmDashboard() {
                 <form className="form" onSubmit={addAnimal}>
                   <label>
                     Name
-                    <input name="name" required />
+                    <input name="name" required placeholder="Beetal Buck — Noor" />
                   </label>
                   <label>
                     Species
@@ -258,25 +344,66 @@ export default function FarmDashboard() {
                     </select>
                   </label>
                   <label>
+                    Breed
+                    <input name="breed" placeholder="Beetal / Kajli / Sahiwal" />
+                  </label>
+                  <label>
                     Age (months)
                     <input name="ageMonths" type="number" required defaultValue={12} />
                   </label>
                   <label>
-                    Price (PKR)
+                    Weight (kg)
+                    <input name="weightKg" type="number" step="0.1" />
+                  </label>
+                  <label>
+                    Total price (PKR)
                     <input name="pricePkr" type="number" required />
+                  </label>
+                  <label>
+                    Share price (PKR)
+                    <input name="sharePricePkr" type="number" placeholder="Defaults from price ÷ shares" />
+                  </label>
+                  <label>
+                    Total shares
+                    <input name="totalShares" type="number" defaultValue={1} min={1} />
                   </label>
                   <label>
                     Expected ROI %
                     <input name="expectedRoiPercent" type="number" defaultValue={18} />
                   </label>
                   <label>
-                    Image URL
-                    <input name="imageUrl" type="url" />
+                    Description
+                    <textarea name="description" rows={3} required />
                   </label>
                   <label>
-                    Description
-                    <textarea name="description" rows={2} />
+                    Image URL (optional)
+                    <input name="imageUrl" type="url" placeholder="https://…" />
                   </label>
+                  <label>
+                    Or upload animal image
+                    <input
+                      name="imageFile"
+                      type="file"
+                      accept="image/*"
+                      onChange={async (ev) => {
+                        const f = ev.target.files?.[0];
+                        if (f) setAnimalPreview(await fileToDataUrl(f));
+                      }}
+                    />
+                  </label>
+                  {animalPreview ? (
+                    // eslint-disable-next-line @next/next/no-img-element
+                    <img
+                      src={animalPreview}
+                      alt="Animal preview"
+                      style={{
+                        width: "100%",
+                        maxHeight: 200,
+                        objectFit: "cover",
+                        borderRadius: 12,
+                      }}
+                    />
+                  ) : null}
                   <button className="btn btn-primary">Publish listing</button>
                 </form>
               </div>
@@ -300,14 +427,18 @@ export default function FarmDashboard() {
                 <ul>
                   {(farm.expenses || []).map((ex) => (
                     <li key={ex.id}>
-                      {ex.category}: {formatPkr(ex.amountPkr)} {ex.note ? `— ${ex.note}` : ""}
+                      {ex.category}: {formatPkr(ex.amountPkr)}{" "}
+                      {ex.note ? `— ${ex.note}` : ""}
                     </li>
                   ))}
                 </ul>
               </div>
             </div>
           ) : (
-            <p className="meta">Your farm is awaiting admin verification before you can list animals.</p>
+            <p className="meta">
+              Your farm is awaiting admin verification before you can list animals.
+              Ask admin@herdshare.pk to approve it.
+            </p>
           )}
         </>
       )}

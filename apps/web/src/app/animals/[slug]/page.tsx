@@ -88,7 +88,11 @@ export default async function AnimalDetailPage({ params }: Props) {
               : ""}
           </p>
           <p>{animal.description}</p>
-          <InvestButton animalId={animal.id} disabled={animal.availableShares < 1} />
+          <InvestButton
+            animalId={animal.id}
+            animalSlug={animal.slug}
+            disabled={animal.availableShares < 1}
+          />
           <div style={{ marginTop: "2rem" }}>
             <h2>Care updates</h2>
             {(animal.updates || []).length ? (

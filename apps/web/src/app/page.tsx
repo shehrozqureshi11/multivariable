@@ -1,28 +1,18 @@
-import Image from "next/image";
 import Link from "next/link";
 import { AnimalCard } from "@/components/AnimalCard";
+import { HeroMedia } from "@/components/HeroMedia";
 import { apiFetch, Animal, SITE_NAME } from "@/lib/api";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const res = await apiFetch<Animal[]>("/animals?limit=6", { revalidate: 60 });
+  const res = await apiFetch<Animal[]>("/animals?limit=9", { revalidate: 60 });
   const animals = res.success ? res.data || [] : [];
 
   return (
     <>
       <section className="hero">
-        <div className="hero-media">
-          <Image
-            src="https://images.unsplash.com/photo-1500595046743-cd271d694ee0?w=1800&q=80"
-            alt="Livestock grazing on a verified Pakistani farm"
-            fill
-            priority
-            sizes="100vw"
-            style={{ objectFit: "cover" }}
-          />
-          <div className="hero-overlay" />
-        </div>
+        <HeroMedia />
         <div className="container hero-content">
           <p className="eyebrow" style={{ color: "#f0d6c4" }}>
             {SITE_NAME}
@@ -36,7 +26,11 @@ export default async function HomePage() {
             <Link href="/marketplace" className="btn btn-accent">
               Browse livestock
             </Link>
-            <Link href="/how-it-works" className="btn btn-secondary" style={{ color: "#fff", borderColor: "rgba(255,255,255,0.45)" }}>
+            <Link
+              href="/how-it-works"
+              className="btn btn-secondary"
+              style={{ color: "#fff", borderColor: "rgba(255,255,255,0.45)" }}
+            >
               How it works
             </Link>
           </div>
@@ -59,7 +53,9 @@ export default async function HomePage() {
               <AnimalCard key={a.id} animal={a} />
             ))}
             {!animals.length ? (
-              <p className="meta">Marketplace data will appear once the API and database are connected.</p>
+              <p className="meta">
+                Marketplace data will appear once the API and database are connected.
+              </p>
             ) : null}
           </div>
         </div>

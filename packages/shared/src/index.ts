@@ -50,6 +50,7 @@ export const farmCreateSchema = z.object({
   city: z.string().min(2).max(100),
   province: z.string().min(2).max(100),
   capacity: z.number().int().positive().optional(),
+  imageUrl: z.string().min(1).max(500_000).optional(),
 });
 
 export const animalCreateSchema = z.object({
@@ -64,7 +65,7 @@ export const animalCreateSchema = z.object({
   totalShares: z.number().int().positive().default(1),
   expectedRoiPercent: z.number().min(0).max(100).optional(),
   description: z.string().max(2000).optional(),
-  imageUrl: z.string().url().optional(),
+  imageUrl: z.string().min(1).max(500_000).optional(),
 });
 
 export const investSchema = z.object({

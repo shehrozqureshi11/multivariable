@@ -19,7 +19,7 @@ export function DashboardShell({
   useEffect(() => {
     if (!ready) return;
     if (!auth) {
-      router.replace("/login");
+      router.replace(`/login?next=${encodeURIComponent(pathname || "/dashboard")}`);
       return;
     }
     if (auth.user.role !== role) {
@@ -27,7 +27,7 @@ export function DashboardShell({
       else if (auth.user.role === "FARM_OWNER") router.replace("/dashboard/farm");
       else router.replace("/dashboard/investor");
     }
-  }, [auth, ready, role, router]);
+  }, [auth, ready, role, router, pathname]);
 
   if (!ready || !auth || auth.user.role !== role) {
     return <div className="container dash-shell">Loading dashboard…</div>;

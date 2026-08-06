@@ -30,13 +30,23 @@ export default async function FarmsPage() {
               <Link href={`/farms/${farm.slug}`}>
                 <div className="card-media">
                   {farm.imageUrl ? (
-                    <Image
-                      src={farm.imageUrl}
-                      alt={farm.name}
-                      width={800}
-                      height={500}
-                      sizes="(max-width: 900px) 100vw, 50vw"
-                    />
+                    farm.imageUrl.startsWith("data:") ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img
+                        src={farm.imageUrl}
+                        alt={farm.name}
+                        style={{ width: "100%", height: "100%", objectFit: "cover" }}
+                      />
+                    ) : (
+                      <Image
+                        src={farm.imageUrl}
+                        alt={farm.name}
+                        width={800}
+                        height={500}
+                        sizes="(max-width: 900px) 100vw, 50vw"
+                        style={{ objectFit: "cover", width: "100%", height: "100%" }}
+                      />
+                    )
                   ) : null}
                 </div>
                 <div className="card-body">
