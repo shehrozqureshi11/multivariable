@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { ok, fail } from "@herdshare/shared";
 import { prisma } from "../lib/prisma";
+import { paramId } from "../lib/params";
 import { authenticate, AuthRequest } from "../middleware/auth";
 
 const router = Router();
@@ -16,7 +17,7 @@ router.get("/", authenticate, async (req: AuthRequest, res) => {
 
 router.post("/:id/read", authenticate, async (req: AuthRequest, res) => {
   const n = await prisma.notification.findFirst({
-    where: { id: req.params.id, userId: req.user!.sub },
+    where: { id: paramId(req), userId: req.user!.sub },
   });
   if (!n) return res.status(404).json(fail("NOT_FOUND", "Notification not found"));
   const updated = await prisma.notification.update({

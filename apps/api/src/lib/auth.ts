@@ -1,4 +1,4 @@
-import jwt from "jsonwebtoken";
+import jwt, { type SignOptions } from "jsonwebtoken";
 import { UserRole } from "@prisma/client";
 
 const accessSecret = () =>
@@ -13,15 +13,17 @@ export type JwtPayload = {
 };
 
 export function signAccessToken(payload: JwtPayload) {
-  return jwt.sign(payload, accessSecret(), {
-    expiresIn: process.env.JWT_ACCESS_EXPIRES || "15m",
-  });
+  const options: SignOptions = {
+    expiresIn: (process.env.JWT_ACCESS_EXPIRES || "15m") as SignOptions["expiresIn"],
+  };
+  return jwt.sign(payload, accessSecret(), options);
 }
 
 export function signRefreshToken(payload: JwtPayload) {
-  return jwt.sign(payload, refreshSecret(), {
-    expiresIn: process.env.JWT_REFRESH_EXPIRES || "7d",
-  });
+  const options: SignOptions = {
+    expiresIn: (process.env.JWT_REFRESH_EXPIRES || "7d") as SignOptions["expiresIn"],
+  };
+  return jwt.sign(payload, refreshSecret(), options);
 }
 
 export function verifyAccessToken(token: string): JwtPayload {

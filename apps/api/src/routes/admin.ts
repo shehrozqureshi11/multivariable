@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { ok, fail } from "@herdshare/shared";
 import { prisma } from "../lib/prisma";
+import { paramId } from "../lib/params";
 import { cacheDel } from "../lib/redis";
 import { notify, writeAudit } from "../lib/helpers";
 import { authenticate, requireRoles, AuthRequest } from "../middleware/auth";
@@ -61,7 +62,7 @@ router.post("/farms/:id/verify", async (req: AuthRequest, res) => {
     return res.status(400).json(fail("VALIDATION_ERROR", "status must be APPROVED or REJECTED"));
   }
   const farm = await prisma.farm.update({
-    where: { id: req.params.id },
+    where: { id: paramId(req) },
     data: {
       status,
       verifiedAt: status === "APPROVED" ? new Date() : null,
@@ -102,7 +103,7 @@ router.post("/kyc/:id/review", async (req: AuthRequest, res) => {
     notes?: string;
   };
   const kyc = await prisma.kycProfile.update({
-    where: { id: req.params.id },
+    where: { id: paramId(req) },
     data: { status, notes, reviewedAt: new Date() },
   });
   await writeAudit({
@@ -125,7 +126,7 @@ router.get("/disputes", async (_req, res) => {
 router.patch("/disputes/:id", async (req: AuthRequest, res) => {
   const { status, resolution } = req.body;
   const dispute = await prisma.dispute.update({
-    where: { id: req.params.id },
+    where: { id: paramId(req) },
     data: { status, resolution },
   });
   await notify(
@@ -164,7 +165,7 @@ router.get("/withdrawals", async (_req, res) => {
 router.post("/withdrawals/:id/process", async (req: AuthRequest, res) => {
   const { status } = req.body as { status: "COMPLETED" | "FAILED" };
   const item = await prisma.withdrawal.update({
-    where: { id: req.params.id },
+    where: { id: paramId(req) },
     data: { status, processedAt: new Date() },
   });
   await writeAudit({

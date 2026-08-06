@@ -7,6 +7,7 @@ import {
   paginationSchema,
 } from "@herdshare/shared";
 import { prisma } from "../lib/prisma";
+import { paramId, paramSlug } from "../lib/params";
 import { cacheGet, cacheSet, cacheDel } from "../lib/redis";
 import { slugify, writeAudit } from "../lib/helpers";
 import { authenticate, requireRoles, AuthRequest } from "../middleware/auth";
@@ -52,12 +53,12 @@ router.get("/", validateQuery(listQuery), async (req, res) => {
 });
 
 router.get("/:slug", async (req, res) => {
-  const cacheKey = `animal:${req.params.slug}`;
+  const cacheKey = `animal:${paramSlug(req)}`;
   const cached = await cacheGet<unknown>(cacheKey);
   if (cached) return res.json(cached);
 
   const animal = await prisma.animal.findUnique({
-    where: { slug: req.params.slug },
+    where: { slug: paramSlug(req) },
     include: {
       farm: true,
       updates: { orderBy: { createdAt: "desc" }, take: 10 },
@@ -121,7 +122,7 @@ router.post(
   requireRoles("FARM_OWNER"),
   async (req: AuthRequest, res) => {
     const animal = await prisma.animal.findUnique({
-      where: { id: req.params.id },
+      where: { id: paramId(req) },
       include: { farm: true },
     });
     if (!animal || animal.farm.ownerId !== req.user!.sub) {
@@ -151,7 +152,7 @@ router.post(
   requireRoles("FARM_OWNER"),
   async (req: AuthRequest, res) => {
     const animal = await prisma.animal.findUnique({
-      where: { id: req.params.id },
+      where: { id: paramId(req) },
       include: { farm: true },
     });
     if (!animal || animal.farm.ownerId !== req.user!.sub) {

@@ -1,8 +1,9 @@
 import { Router } from "express";
 import { farmCreateSchema, ok, fail, paginationSchema } from "@herdshare/shared";
 import { prisma } from "../lib/prisma";
+import { paramId, paramSlug } from "../lib/params";
 import { cacheGet, cacheSet, cacheDel } from "../lib/redis";
-import { notify, slugify, writeAudit } from "../lib/helpers";
+import { slugify, writeAudit } from "../lib/helpers";
 import { authenticate, requireRoles, AuthRequest } from "../middleware/auth";
 import { validateBody, validateQuery } from "../middleware/validate";
 
@@ -53,12 +54,12 @@ router.get("/", validateQuery(paginationSchema), async (req, res) => {
 });
 
 router.get("/:slug", async (req, res) => {
-  const cacheKey = `farm:${req.params.slug}`;
+  const cacheKey = `farm:${paramSlug(req)}`;
   const cached = await cacheGet<unknown>(cacheKey);
   if (cached) return res.json(cached);
 
   const farm = await prisma.farm.findUnique({
-    where: { slug: req.params.slug },
+    where: { slug: paramSlug(req) },
     include: {
       owner: { select: { fullName: true, phone: true } },
       animals: {
@@ -114,7 +115,7 @@ router.patch(
   authenticate,
   requireRoles("FARM_OWNER", "ADMIN"),
   async (req: AuthRequest, res) => {
-    const farm = await prisma.farm.findUnique({ where: { id: req.params.id } });
+    const farm = await prisma.farm.findUnique({ where: { id: paramId(req) } });
     if (!farm) return res.status(404).json(fail("NOT_FOUND", "Farm not found"));
     if (req.user!.role === "FARM_OWNER" && farm.ownerId !== req.user!.sub) {
       return res.status(403).json(fail("FORBIDDEN", "Not your farm"));
