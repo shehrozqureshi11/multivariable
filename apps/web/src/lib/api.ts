@@ -18,15 +18,23 @@ export async function apiFetch<T>(
   headers.set("Content-Type", "application/json");
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
-  const res = await fetch(`${API_URL}${path}`, {
-    ...init,
-    headers,
-    next:
-      revalidate === false
-        ? { revalidate: 0 }
-        : { revalidate: revalidate ?? 30 },
-  });
-  return res.json();
+  const isServer = typeof window === "undefined";
+  try {
+    const res = await fetch(`${API_URL}${path}`, {
+      ...init,
+      headers,
+      cache: revalidate === false ? "no-store" : undefined,
+      ...(isServer && revalidate !== false
+        ? { next: { revalidate: revalidate ?? 30 } }
+        : {}),
+    });
+    return res.json();
+  } catch {
+    return {
+      success: false,
+      error: { code: "NETWORK_ERROR", message: "Unable to reach API" },
+    };
+  }
 }
 
 export function formatPkr(value: number | string) {
