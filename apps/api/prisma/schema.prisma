@@ -1,0 +1,382 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+enum UserRole {
+  INVESTOR
+  FARM_OWNER
+  ADMIN
+}
+
+enum VerificationStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
+enum AnimalSpecies {
+  GOAT
+  SHEEP
+  COW
+}
+
+enum AnimalStatus {
+  LISTED
+  PARTIALLY_FUNDED
+  FULLY_FUNDED
+  ACTIVE
+  SOLD
+  DECEASED
+  REMOVED
+}
+
+enum InvestmentStatus {
+  PENDING
+  ACTIVE
+  COMPLETED
+  CANCELLED
+  DISPUTED
+}
+
+enum PaymentStatus {
+  PENDING
+  COMPLETED
+  FAILED
+  REFUNDED
+}
+
+enum PaymentMethod {
+  MOCK
+  JAZZCASH
+  EASYPAISA
+  BANK
+  CARD
+}
+
+enum WalletTxnType {
+  DEPOSIT
+  WITHDRAWAL
+  INVESTMENT
+  PROFIT
+  REFUND
+  FEE
+}
+
+enum DisputeStatus {
+  OPEN
+  IN_REVIEW
+  RESOLVED
+  REJECTED
+}
+
+enum NotificationType {
+  SYSTEM
+  INVESTMENT
+  PAYMENT
+  FARM
+  DISPUTE
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  fullName     String
+  phone        String?
+  role         UserRole
+  isActive     Boolean  @default(true)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  kyc              KycProfile?
+  farm             Farm?
+  wallet           Wallet?
+  investments      Investment[]
+  payments         Payment[]
+  withdrawals      Withdrawal[]
+  notifications    Notification[]
+  reviews          Review[]
+  disputesOpened   Dispute[]       @relation("DisputeOpener")
+  auditLogs        AuditLog[]
+  refreshTokens    RefreshToken[]
+  agreements       Agreement[]
+}
+
+model RefreshToken {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  userId    String
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId])
+}
+
+model KycProfile {
+  id           String             @id @default(cuid())
+  userId       String             @unique
+  cnicNumber   String?
+  documentUrl  String?
+  status       VerificationStatus @default(PENDING)
+  notes        String?
+  reviewedAt   DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  user         User               @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model Farm {
+  id           String             @id @default(cuid())
+  ownerId      String             @unique
+  name         String
+  slug         String             @unique
+  description  String?
+  location     String
+  city         String
+  province     String
+  capacity     Int?
+  imageUrl     String?
+  status       VerificationStatus @default(PENDING)
+  verifiedAt   DateTime?
+  createdAt    DateTime           @default(now())
+  updatedAt    DateTime           @updatedAt
+  owner        User               @relation(fields: [ownerId], references: [id], onDelete: Cascade)
+  animals      Animal[]
+  expenses     Expense[]
+  reviews      Review[]
+}
+
+model Animal {
+  id                 String        @id @default(cuid())
+  farmId             String
+  name               String
+  slug               String        @unique
+  species            AnimalSpecies
+  breed              String?
+  ageMonths          Int
+  weightKg           Float?
+  pricePkr           Decimal       @db.Decimal(14, 2)
+  sharePricePkr      Decimal?      @db.Decimal(14, 2)
+  totalShares        Int           @default(1)
+  availableShares    Int           @default(1)
+  expectedRoiPercent Float?
+  description        String?
+  imageUrl           String?
+  status             AnimalStatus  @default(LISTED)
+  createdAt          DateTime      @default(now())
+  updatedAt          DateTime      @updatedAt
+  farm               Farm          @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  investments        Investment[]
+  updates            AnimalUpdate[]
+  vaccinations       Vaccination[]
+  expenses           Expense[]
+
+  @@index([farmId])
+  @@index([species, status])
+}
+
+model Investment {
+  id           String           @id @default(cuid())
+  investorId   String
+  animalId     String
+  shares       Int
+  amountPkr    Decimal          @db.Decimal(14, 2)
+  status       InvestmentStatus @default(PENDING)
+  startedAt    DateTime?
+  completedAt  DateTime?
+  createdAt    DateTime         @default(now())
+  updatedAt    DateTime         @updatedAt
+  investor     User             @relation(fields: [investorId], references: [id])
+  animal       Animal           @relation(fields: [animalId], references: [id])
+  payment      Payment?
+  agreement    Agreement?
+  distributions ProfitDistribution[]
+
+  @@index([investorId])
+  @@index([animalId])
+}
+
+model Payment {
+  id            String        @id @default(cuid())
+  userId        String
+  investmentId  String?       @unique
+  amountPkr     Decimal       @db.Decimal(14, 2)
+  method        PaymentMethod @default(MOCK)
+  status        PaymentStatus @default(PENDING)
+  providerRef   String?
+  metadata      Json?
+  createdAt     DateTime      @default(now())
+  updatedAt     DateTime      @updatedAt
+  user          User          @relation(fields: [userId], references: [id])
+  investment    Investment?   @relation(fields: [investmentId], references: [id])
+
+  @@index([userId])
+}
+
+model Wallet {
+  id        String              @id @default(cuid())
+  userId    String              @unique
+  balancePkr Decimal            @default(0) @db.Decimal(14, 2)
+  currency  String              @default("PKR")
+  createdAt DateTime            @default(now())
+  updatedAt DateTime            @updatedAt
+  user      User                @relation(fields: [userId], references: [id], onDelete: Cascade)
+  txns      WalletTransaction[]
+}
+
+model WalletTransaction {
+  id          String        @id @default(cuid())
+  walletId    String
+  type        WalletTxnType
+  amountPkr   Decimal       @db.Decimal(14, 2)
+  balanceAfter Decimal      @db.Decimal(14, 2)
+  reference   String?
+  note        String?
+  createdAt   DateTime      @default(now())
+  wallet      Wallet        @relation(fields: [walletId], references: [id], onDelete: Cascade)
+
+  @@index([walletId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  farmId      String
+  animalId    String?
+  category    String
+  amountPkr   Decimal  @db.Decimal(14, 2)
+  note        String?
+  incurredAt  DateTime @default(now())
+  createdAt   DateTime @default(now())
+  farm        Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  animal      Animal?  @relation(fields: [animalId], references: [id])
+
+  @@index([farmId])
+}
+
+model ProfitDistribution {
+  id           String     @id @default(cuid())
+  investmentId String
+  amountPkr    Decimal    @db.Decimal(14, 2)
+  note         String?
+  paidAt       DateTime   @default(now())
+  createdAt    DateTime   @default(now())
+  investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+
+  @@index([investmentId])
+}
+
+model AnimalUpdate {
+  id        String   @id @default(cuid())
+  animalId  String
+  title     String
+  body      String
+  imageUrl  String?
+  weightKg  Float?
+  createdAt DateTime @default(now())
+  animal    Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@index([animalId])
+}
+
+model Vaccination {
+  id           String   @id @default(cuid())
+  animalId     String
+  vaccineName  String
+  administeredAt DateTime
+  nextDueAt    DateTime?
+  notes        String?
+  createdAt    DateTime @default(now())
+  animal       Animal   @relation(fields: [animalId], references: [id], onDelete: Cascade)
+
+  @@index([animalId])
+}
+
+model Agreement {
+  id           String     @id @default(cuid())
+  investmentId String     @unique
+  userId       String
+  version      String     @default("1.0")
+  contentHash  String
+  acceptedAt   DateTime   @default(now())
+  pdfUrl       String?
+  investment   Investment @relation(fields: [investmentId], references: [id], onDelete: Cascade)
+  user         User       @relation(fields: [userId], references: [id])
+}
+
+model Withdrawal {
+  id          String        @id @default(cuid())
+  userId      String
+  amountPkr   Decimal       @db.Decimal(14, 2)
+  status      PaymentStatus @default(PENDING)
+  bankDetails String?
+  processedAt DateTime?
+  createdAt   DateTime      @default(now())
+  updatedAt   DateTime      @updatedAt
+  user        User          @relation(fields: [userId], references: [id])
+
+  @@index([userId])
+}
+
+model Notification {
+  id        String           @id @default(cuid())
+  userId    String
+  type      NotificationType @default(SYSTEM)
+  title     String
+  body      String
+  isRead    Boolean          @default(false)
+  link      String?
+  createdAt DateTime         @default(now())
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, isRead])
+}
+
+model Review {
+  id        String   @id @default(cuid())
+  farmId    String
+  userId    String
+  rating    Int
+  comment   String?
+  createdAt DateTime @default(now())
+  farm      Farm     @relation(fields: [farmId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id])
+
+  @@unique([farmId, userId])
+}
+
+model Dispute {
+  id           String        @id @default(cuid())
+  openerId     String
+  investmentId String?
+  subject      String
+  description  String
+  status       DisputeStatus @default(OPEN)
+  resolution   String?
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
+  opener       User          @relation("DisputeOpener", fields: [openerId], references: [id])
+
+  @@index([status])
+}
+
+model AuditLog {
+  id         String   @id @default(cuid())
+  actorId    String?
+  action     String
+  entityType String
+  entityId   String?
+  metadata   Json?
+  ip         String?
+  createdAt  DateTime @default(now())
+  actor      User?    @relation(fields: [actorId], references: [id])
+
+  @@index([entityType, entityId])
+  @@index([createdAt])
+}
