@@ -1,5 +1,6 @@
 import { Router } from "express";
 import crypto from "crypto";
+import { Prisma } from "@prisma/client";
 import { investSchema, ok, fail } from "@herdshare/shared";
 import { prisma } from "../lib/prisma";
 import { cacheDel } from "../lib/redis";
@@ -57,7 +58,7 @@ router.post(
     const sharePrice = Number(animal.sharePricePkr || animal.pricePkr);
     const amountPkr = sharePrice * shares;
 
-    const result = await prisma.$transaction(async (tx) => {
+    const result = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
       const investment = await tx.investment.create({
         data: {
           investorId: req.user!.sub,

@@ -1,10 +1,14 @@
 # Railway — HerdShare API
-# Dashboard: New Project → Deploy from GitHub → select this repo
-# Then set service to use this config (or leave as Dockerfile auto-detect).
+#
+# IMPORTANT (fixes "@herdshare/shared" build errors):
+# 1. Service Root Directory must be EMPTY / repo root (not apps/api)
+# 2. Settings → Build → Builder = Dockerfile
+# 3. Dockerfile path = apps/api/Dockerfile
 
 [build]
 builder = "DOCKERFILE"
 dockerfilePath = "apps/api/Dockerfile"
+watchPatterns = ["apps/api/**", "packages/shared/**", "package.json", "package-lock.json"]
 
 [deploy]
 healthcheckPath = "/health"

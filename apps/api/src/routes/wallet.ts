@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { Prisma } from "@prisma/client";
 import { ok, fail } from "@herdshare/shared";
 import { prisma } from "../lib/prisma";
 import { writeAudit } from "../lib/helpers";
@@ -35,7 +36,7 @@ router.post("/deposit", authenticate, async (req: AuthRequest, res) => {
     }));
 
   const newBal = Number(wallet.balancePkr) + amount;
-  const updated = await prisma.$transaction(async (tx) => {
+  const updated = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     const w = await tx.wallet.update({
       where: { id: wallet.id },
       data: { balancePkr: newBal },
@@ -83,7 +84,7 @@ router.post("/withdraw", authenticate, async (req: AuthRequest, res) => {
     return res.status(400).json(fail("INSUFFICIENT_FUNDS", "Insufficient wallet balance"));
   }
   const newBal = Number(wallet.balancePkr) - amount;
-  const withdrawal = await prisma.$transaction(async (tx) => {
+  const withdrawal = await prisma.$transaction(async (tx: Prisma.TransactionClient) => {
     await tx.wallet.update({
       where: { id: wallet.id },
       data: { balancePkr: newBal },

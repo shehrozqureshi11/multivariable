@@ -1,0 +1,18 @@
+# Fallback when Railway uses Nixpacks/Railpack instead of Dockerfile.
+# Prefer Dockerfile via railway.toml for reliable monorepo builds.
+
+[phases.setup]
+nixPkgs = ["nodejs_20", "openssl"]
+
+[phases.install]
+cmds = ["npm ci"]
+
+[phases.build]
+cmds = [
+  "npm run build -w @herdshare/shared",
+  "npx prisma generate --schema=apps/api/prisma/schema.prisma",
+  "npm run build -w @herdshare/api",
+]
+
+[start]
+cmd = "npm run start -w @herdshare/api"

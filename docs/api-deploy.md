@@ -14,7 +14,10 @@ NEXT_PUBLIC_API_URL=https://YOUR-API-HOST/api/v1
 
 1. Open [railway.app](https://railway.app) → **New Project** → **Deploy from GitHub**.
 2. Select `shehrozqureshi11/multivariable`.
-3. Railway should pick up `railway.toml` + `apps/api/Dockerfile`.
+3. **Critical settings** (avoids `Cannot find module '@herdshare/shared'`):
+   - **Root Directory:** leave empty (repo root) — do **not** set `apps/api`
+   - **Settings → Build → Builder:** `Dockerfile`
+   - **Dockerfile path:** `apps/api/Dockerfile`
 4. Open the service → **Variables** and add:
 
 | Variable | Example / notes |
