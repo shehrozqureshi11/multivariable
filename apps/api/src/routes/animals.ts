@@ -24,51 +24,94 @@ router.get("/", validateQuery(listQuery), async (req, res) => {
   const q = (req as typeof req & { validatedQuery: z.infer<typeof listQuery> })
     .validatedQuery;
   const cacheKey = `animals:${q.species || "all"}:${q.farmId || "all"}:${q.page}:${q.limit}`;
-  const cached = await cacheGet<unknown>(cacheKey);
-  if (cached) return res.json(cached);
+  try {
+    const cached = await cacheGet<unknown>(cacheKey);
+    if (cached) return res.json(cached);
 
-  const where = {
-    status: { in: ["LISTED" as const, "PARTIALLY_FUNDED" as const] },
-    farm: { status: "APPROVED" as const },
-    ...(q.species ? { species: q.species } : {}),
-    ...(q.farmId ? { farmId: q.farmId } : {}),
-  };
-  const [total, animals] = await Promise.all([
-    prisma.animal.count({ where }),
-    prisma.animal.findMany({
-      where,
-      skip: (q.page - 1) * q.limit,
-      take: q.limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        farm: {
-          select: { id: true, name: true, slug: true, city: true, province: true },
+    const where = {
+      status: { in: ["LISTED" as const, "PARTIALLY_FUNDED" as const] },
+      farm: { status: "APPROVED" as const },
+      ...(q.species ? { species: q.species } : {}),
+      ...(q.farmId ? { farmId: q.farmId } : {}),
+    };
+    const [total, animals] = await Promise.all([
+      prisma.animal.count({ where }),
+      prisma.animal.findMany({
+        where,
+        skip: (q.page - 1) * q.limit,
+        take: q.limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          farm: {
+            select: {
+              id: true,
+              name: true,
+              slug: true,
+              city: true,
+              province: true,
+            },
+          },
         },
-      },
-    }),
-  ]);
-  const payload = ok(animals, { page: q.page, limit: q.limit, total });
-  await cacheSet(cacheKey, payload, 30);
-  return res.json(payload);
+      }),
+    ]);
+    if (!animals.length) {
+      const { listDemoAnimals } = await import("../lib/demo-catalog");
+      return res.json(
+        listDemoAnimals({
+          species: q.species,
+          farmId: q.farmId,
+          page: q.page,
+          limit: q.limit,
+        })
+      );
+    }
+    const payload = ok(animals, { page: q.page, limit: q.limit, total });
+    await cacheSet(cacheKey, payload, 30);
+    return res.json(payload);
+  } catch (err) {
+    console.error("animals list fallback:", err);
+    const { listDemoAnimals } = await import("../lib/demo-catalog");
+    return res.json(
+      listDemoAnimals({
+        species: q.species,
+        farmId: q.farmId,
+        page: q.page,
+        limit: q.limit,
+      })
+    );
+  }
 });
 
 router.get("/:slug", async (req, res) => {
   const cacheKey = `animal:${paramSlug(req)}`;
-  const cached = await cacheGet<unknown>(cacheKey);
-  if (cached) return res.json(cached);
+  try {
+    const cached = await cacheGet<unknown>(cacheKey);
+    if (cached) return res.json(cached);
 
-  const animal = await prisma.animal.findUnique({
-    where: { slug: paramSlug(req) },
-    include: {
-      farm: true,
-      updates: { orderBy: { createdAt: "desc" }, take: 10 },
-      vaccinations: { orderBy: { administeredAt: "desc" }, take: 10 },
-    },
-  });
-  if (!animal) return res.status(404).json(fail("NOT_FOUND", "Animal not found"));
-  const payload = ok(animal);
-  await cacheSet(cacheKey, payload, 45);
-  return res.json(payload);
+    const animal = await prisma.animal.findUnique({
+      where: { slug: paramSlug(req) },
+      include: {
+        farm: true,
+        updates: { orderBy: { createdAt: "desc" }, take: 10 },
+        vaccinations: { orderBy: { administeredAt: "desc" }, take: 10 },
+      },
+    });
+    if (!animal) {
+      const { getDemoAnimalBySlug } = await import("../lib/demo-catalog");
+      const demo = getDemoAnimalBySlug(paramSlug(req));
+      if (!demo) return res.status(404).json(fail("NOT_FOUND", "Animal not found"));
+      return res.json(ok(demo));
+    }
+    const payload = ok(animal);
+    await cacheSet(cacheKey, payload, 45);
+    return res.json(payload);
+  } catch (err) {
+    console.error("animal detail fallback:", err);
+    const { getDemoAnimalBySlug } = await import("../lib/demo-catalog");
+    const demo = getDemoAnimalBySlug(paramSlug(req));
+    if (!demo) return res.status(404).json(fail("NOT_FOUND", "Animal not found"));
+    return res.json(ok(demo));
+  }
 });
 
 router.post(

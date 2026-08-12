@@ -36,6 +36,15 @@ export async function apiFetch<T>(
         ? { next: { revalidate: revalidate ?? 30 } }
         : {}),
     });
+    if (!res.ok) {
+      return {
+        success: false,
+        error: {
+          code: `HTTP_${res.status}`,
+          message: `API returned ${res.status}`,
+        },
+      };
+    }
     return res.json();
   } catch {
     return {

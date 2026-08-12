@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { AnimalCard } from "@/components/AnimalCard";
-import { apiFetch, Animal } from "@/lib/api";
+import { getMarketplaceAnimals } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "Marketplace",
@@ -25,9 +25,10 @@ export default async function MarketplacePage({
 }) {
   const sp = await searchParams;
   const active = (sp.species || "").toUpperCase();
-  const qs = active ? `?species=${active}&limit=24` : "?limit=24";
-  const res = await apiFetch<Animal[]>(`/animals${qs}`, { revalidate: 30 });
-  const animals = res.success ? res.data || [] : [];
+  const { animals } = await getMarketplaceAnimals({
+    species: active || undefined,
+    limit: 24,
+  });
 
   return (
     <section className="section" style={{ paddingTop: "1.5rem" }}>
@@ -70,9 +71,6 @@ export default async function MarketplacePage({
             </div>
           ))}
         </div>
-        {!animals.length ? (
-          <p className="meta">No listings yet. Connect the API and seed the database.</p>
-        ) : null}
       </div>
     </section>
   );

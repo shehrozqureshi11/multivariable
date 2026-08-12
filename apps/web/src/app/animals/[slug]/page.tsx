@@ -1,16 +1,16 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import { notFound } from "next/navigation";
-import { apiFetch, Animal, formatPkr, SITE_URL } from "@/lib/api";
+import { formatPkr, SITE_URL } from "@/lib/api";
+import { getAnimalBySlug } from "@/lib/catalog";
 import { InvestButton } from "@/components/InvestButton";
 
 type Props = { params: Promise<{ slug: string }> };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const res = await apiFetch<Animal>(`/animals/${slug}`, { revalidate: 45 });
-  if (!res.success || !res.data) return { title: "Animal" };
-  const a = res.data;
+  const { animal: a } = await getAnimalBySlug(slug);
+  if (!a) return { title: "Animal" };
   return {
     title: a.name,
     description:
@@ -27,14 +27,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function AnimalDetailPage({ params }: Props) {
   const { slug } = await params;
-  const res = await apiFetch<
-    Animal & {
-      updates?: { id: string; title: string; body: string; createdAt: string }[];
-      vaccinations?: { id: string; vaccineName: string; administeredAt: string }[];
-    }
-  >(`/animals/${slug}`, { revalidate: 45 });
-  if (!res.success || !res.data) notFound();
-  const animal = res.data;
+  const { animal } = await getAnimalBySlug(slug);
+  if (!animal) notFound();
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -61,7 +55,10 @@ export default async function AnimalDetailPage({ params }: Props) {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
       />
       <div className="container grid grid-2">
-        <div className="card-media" style={{ borderRadius: 18, overflow: "hidden", minHeight: 360 }}>
+        <div
+          className="card-media"
+          style={{ borderRadius: 18, overflow: "hidden", minHeight: 360 }}
+        >
           {animal.imageUrl ? (
             <Image
               src={animal.imageUrl}
@@ -80,7 +77,9 @@ export default async function AnimalDetailPage({ params }: Props) {
             {animal.farm?.name} · {animal.farm?.city}
             {animal.breed ? ` · ${animal.breed}` : ""} · {animal.ageMonths} months
           </p>
-          <p className="price">{formatPkr(animal.sharePricePkr || animal.pricePkr)} / share</p>
+          <p className="price">
+            {formatPkr(animal.sharePricePkr || animal.pricePkr)} / share
+          </p>
           <p>
             {animal.availableShares} of {animal.totalShares} shares available
             {animal.expectedRoiPercent
@@ -91,21 +90,16 @@ export default async function AnimalDetailPage({ params }: Props) {
           <InvestButton
             animalId={animal.id}
             animalSlug={animal.slug}
-            disabled={animal.availableShares < 1}
+            disabled={animal.availableShares < 1 || animal.id.startsWith("demo-")}
           />
+          {animal.id.startsWith("demo-") ? (
+            <p className="meta" style={{ marginTop: "0.75rem" }}>
+              Demo listing — connect the API database to enable live investing.
+            </p>
+          ) : null}
           <div style={{ marginTop: "2rem" }}>
             <h2>Care updates</h2>
-            {(animal.updates || []).length ? (
-              <ul>
-                {animal.updates!.map((u) => (
-                  <li key={u.id}>
-                    <strong>{u.title}</strong> — {u.body}
-                  </li>
-                ))}
-              </ul>
-            ) : (
-              <p className="meta">No updates posted yet.</p>
-            )}
+            <p className="meta">No updates posted yet.</p>
           </div>
         </div>
       </div>

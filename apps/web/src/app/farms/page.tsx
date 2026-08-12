@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import { apiFetch, Farm } from "@/lib/api";
+import { getVerifiedFarms } from "@/lib/catalog";
 
 export const metadata: Metadata = {
   title: "Verified Farms",
@@ -12,8 +12,7 @@ export const metadata: Metadata = {
 export const revalidate = 60;
 
 export default async function FarmsPage() {
-  const res = await apiFetch<Farm[]>("/farms?limit=24", { revalidate: 60 });
-  const farms = res.success ? res.data || [] : [];
+  const { farms } = await getVerifiedFarms(24);
 
   return (
     <section className="section" style={{ paddingTop: "1.5rem" }}>
@@ -68,9 +67,6 @@ export default async function FarmsPage() {
             </article>
           ))}
         </div>
-        {!farms.length ? (
-          <p className="meta">No verified farms yet.</p>
-        ) : null}
       </div>
     </section>
   );

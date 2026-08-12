@@ -42,8 +42,30 @@ app.use(
 app.use(express.json({ limit: "1mb" }));
 app.use(morgan(process.env.NODE_ENV === "production" ? "combined" : "dev"));
 
-app.get("/health", (_req, res) => {
-  res.json({ ok: true, service: "herdshare-api", ts: new Date().toISOString() });
+app.get("/health", async (_req, res) => {
+  let db = false;
+  try {
+    const { dbAvailable } = await import("./lib/prisma");
+    db = await dbAvailable();
+  } catch {
+    db = false;
+  }
+  res.json({
+    ok: true,
+    service: "herdshare-api",
+    db,
+    ts: new Date().toISOString(),
+  });
+});
+
+app.get("/", (_req, res) => {
+  res.json({
+    ok: true,
+    service: "herdshare-api",
+    health: "/health",
+    docs: "/api/docs",
+    animals: "/api/v1/animals",
+  });
 });
 
 app.use("/api/docs", swaggerUi.serve, swaggerUi.setup(openApiSpec));

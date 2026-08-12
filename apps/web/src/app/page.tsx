@@ -1,13 +1,13 @@
 import Link from "next/link";
 import { AnimalCard } from "@/components/AnimalCard";
 import { HeroMedia } from "@/components/HeroMedia";
-import { apiFetch, Animal, SITE_NAME } from "@/lib/api";
+import { getMarketplaceAnimals } from "@/lib/catalog";
+import { SITE_NAME } from "@/lib/api";
 
 export const revalidate = 60;
 
 export default async function HomePage() {
-  const res = await apiFetch<Animal[]>("/animals?limit=6", { revalidate: 60 });
-  const animals = res.success ? res.data || [] : [];
+  const { animals } = await getMarketplaceAnimals({ limit: 6 });
 
   return (
     <>
@@ -94,9 +94,6 @@ export default async function HomePage() {
                 <AnimalCard animal={a} />
               </div>
             ))}
-            {!animals.length ? (
-              <p className="meta">Marketplace listings appear when the API is connected.</p>
-            ) : null}
           </div>
         </div>
       </section>

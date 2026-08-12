@@ -31,52 +31,75 @@ router.get("/", validateQuery(paginationSchema), async (req, res) => {
     .validatedQuery;
   const status = (req.query.status as string) || "APPROVED";
   const cacheKey = `farms:${status}:${page}:${limit}`;
-  const cached = await cacheGet<unknown>(cacheKey);
-  if (cached) return res.json(cached);
+  try {
+    const cached = await cacheGet<unknown>(cacheKey);
+    if (cached) return res.json(cached);
 
-  const where = { status: status as "APPROVED" | "PENDING" | "REJECTED" };
-  const [total, farms] = await Promise.all([
-    prisma.farm.count({ where }),
-    prisma.farm.findMany({
-      where,
-      skip: (page - 1) * limit,
-      take: limit,
-      orderBy: { createdAt: "desc" },
-      include: {
-        owner: { select: { fullName: true } },
-        _count: { select: { animals: true, reviews: true } },
-      },
-    }),
-  ]);
-  const payload = ok(farms, { page, limit, total });
-  await cacheSet(cacheKey, payload, 45);
-  return res.json(payload);
+    const where = { status: status as "APPROVED" | "PENDING" | "REJECTED" };
+    const [total, farms] = await Promise.all([
+      prisma.farm.count({ where }),
+      prisma.farm.findMany({
+        where,
+        skip: (page - 1) * limit,
+        take: limit,
+        orderBy: { createdAt: "desc" },
+        include: {
+          owner: { select: { fullName: true } },
+          _count: { select: { animals: true, reviews: true } },
+        },
+      }),
+    ]);
+    if (!farms.length) {
+      const { listDemoFarms } = await import("../lib/demo-catalog");
+      return res.json(listDemoFarms(page, limit));
+    }
+    const payload = ok(farms, { page, limit, total });
+    await cacheSet(cacheKey, payload, 45);
+    return res.json(payload);
+  } catch (err) {
+    console.error("farms list fallback:", err);
+    const { listDemoFarms } = await import("../lib/demo-catalog");
+    return res.json(listDemoFarms(page, limit));
+  }
 });
 
 router.get("/:slug", async (req, res) => {
   const cacheKey = `farm:${paramSlug(req)}`;
-  const cached = await cacheGet<unknown>(cacheKey);
-  if (cached) return res.json(cached);
+  try {
+    const cached = await cacheGet<unknown>(cacheKey);
+    if (cached) return res.json(cached);
 
-  const farm = await prisma.farm.findUnique({
-    where: { slug: paramSlug(req) },
-    include: {
-      owner: { select: { fullName: true, phone: true } },
-      animals: {
-        where: { status: { in: ["LISTED", "PARTIALLY_FUNDED"] } },
-        orderBy: { createdAt: "desc" },
+    const farm = await prisma.farm.findUnique({
+      where: { slug: paramSlug(req) },
+      include: {
+        owner: { select: { fullName: true, phone: true } },
+        animals: {
+          where: { status: { in: ["LISTED", "PARTIALLY_FUNDED"] } },
+          orderBy: { createdAt: "desc" },
+        },
+        reviews: {
+          take: 10,
+          orderBy: { createdAt: "desc" },
+          include: { user: { select: { fullName: true } } },
+        },
       },
-      reviews: {
-        take: 10,
-        orderBy: { createdAt: "desc" },
-        include: { user: { select: { fullName: true } } },
-      },
-    },
-  });
-  if (!farm) return res.status(404).json(fail("NOT_FOUND", "Farm not found"));
-  const payload = ok(farm);
-  await cacheSet(cacheKey, payload, 60);
-  return res.json(payload);
+    });
+    if (!farm) {
+      const { getDemoFarmBySlug } = await import("../lib/demo-catalog");
+      const demo = getDemoFarmBySlug(paramSlug(req));
+      if (!demo) return res.status(404).json(fail("NOT_FOUND", "Farm not found"));
+      return res.json(ok(demo));
+    }
+    const payload = ok(farm);
+    await cacheSet(cacheKey, payload, 60);
+    return res.json(payload);
+  } catch (err) {
+    console.error("farm detail fallback:", err);
+    const { getDemoFarmBySlug } = await import("../lib/demo-catalog");
+    const demo = getDemoFarmBySlug(paramSlug(req));
+    if (!demo) return res.status(404).json(fail("NOT_FOUND", "Farm not found"));
+    return res.json(ok(demo));
+  }
 });
 
 router.post(
