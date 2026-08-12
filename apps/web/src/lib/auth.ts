@@ -1,8 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 
 const KEY = "herdshare_auth";
+const AUTH_EVENT = "herdshare-auth-changed";
 
 export type AuthState = {
   accessToken: string;
@@ -21,22 +22,42 @@ export function loadAuth(): AuthState | null {
   }
 }
 
+function notifyAuthChanged() {
+  if (typeof window === "undefined") return;
+  window.dispatchEvent(new Event(AUTH_EVENT));
+}
+
 export function saveAuth(state: AuthState) {
   localStorage.setItem(KEY, JSON.stringify(state));
+  notifyAuthChanged();
 }
 
 export function clearAuth() {
   localStorage.removeItem(KEY);
+  notifyAuthChanged();
 }
 
 export function useAuth() {
-  const [auth, setAuth] = useState<AuthState | null>(null);
+  const [auth, setAuthState] = useState<AuthState | null>(null);
   const [ready, setReady] = useState(false);
 
-  useEffect(() => {
-    setAuth(loadAuth());
+  const refresh = useCallback(() => {
+    setAuthState(loadAuth());
     setReady(true);
   }, []);
+
+  useEffect(() => {
+    refresh();
+    const onChange = () => refresh();
+    window.addEventListener(AUTH_EVENT, onChange);
+    window.addEventListener("storage", onChange);
+    window.addEventListener("focus", onChange);
+    return () => {
+      window.removeEventListener(AUTH_EVENT, onChange);
+      window.removeEventListener("storage", onChange);
+      window.removeEventListener("focus", onChange);
+    };
+  }, [refresh]);
 
   return {
     auth,
@@ -44,7 +65,7 @@ export function useAuth() {
     setAuth: (s: AuthState | null) => {
       if (s) saveAuth(s);
       else clearAuth();
-      setAuth(s);
+      setAuthState(s);
     },
   };
 }
