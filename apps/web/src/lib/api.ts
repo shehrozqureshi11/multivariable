@@ -1,13 +1,24 @@
-const API_URL =
-  process.env.NEXT_PUBLIC_API_URL ||
-  (process.env.VERCEL
-    ? "https://herdshareapi-production.up.railway.app/api/v1"
-    : "http://localhost:4000/api/v1");
+function resolveApiUrl() {
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  // Prefer same-origin Next.js API routes on Vercel (works without Railway).
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}/api/v1`;
+  if (process.env.NEXT_PUBLIC_SITE_URL) {
+    return `${process.env.NEXT_PUBLIC_SITE_URL.replace(/\/$/, "")}/api/v1`;
+  }
+  if (process.env.VERCEL) {
+    return "https://multivariable-api-git-main-sheriii.vercel.app/api/v1";
+  }
+  return "http://localhost:3000/api/v1";
+}
+
+const API_URL = resolveApiUrl();
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
-  (process.env.VERCEL
-    ? "https://multivariable-api-git-main-sheriii.vercel.app"
-    : "http://localhost:3000");
+  (process.env.VERCEL_URL
+    ? `https://${process.env.VERCEL_URL}`
+    : process.env.VERCEL
+      ? "https://multivariable-api-git-main-sheriii.vercel.app"
+      : "http://localhost:3000");
 export const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "HerdShare";
 
 export type ApiResponse<T> = {
