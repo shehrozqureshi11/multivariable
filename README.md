@@ -58,6 +58,19 @@ API docs (OpenAPI / Swagger): http://localhost:4000/api/docs
    - `NEXT_PUBLIC_SITE_NAME` — `HerdShare`
 5. Redeploy. Build uses `vercel-build` (shared + web only — **not** the Express API).
 
+### Deploy API (Railway / Render)
+
+See **[docs/api-deploy.md](docs/api-deploy.md)** for full steps.
+
+Short version (Railway):
+1. Deploy this repo on Railway (uses `railway.toml` + `apps/api/Dockerfile`).
+2. Set `DATABASE_URL`, `DIRECT_URL`, JWT secrets, and `CORS_ORIGIN` (your Vercel URL).
+3. Generate a public domain, then set on Vercel:
+
+```text
+NEXT_PUBLIC_API_URL=https://YOUR-RAILWAY-DOMAIN/api/v1
+```
+
 Host the Express API separately (Railway, Render, Fly.io, or a VPS). Vercel is for the Next.js frontend.
 
 ### Local Postgres fallback (no Supabase)

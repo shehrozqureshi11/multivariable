@@ -22,7 +22,7 @@ import notificationRoutes from "./routes/notifications";
 import reportRoutes from "./routes/reports";
 
 const app = express();
-const port = Number(process.env.API_PORT || 4000);
+const port = Number(process.env.PORT || process.env.API_PORT || 4000);
 
 app.use(helmet());
 app.use(
@@ -74,7 +74,7 @@ app.use(
   }
 );
 
-app.listen(port, () => {
-  console.log(`HerdShare API listening on http://localhost:${port}`);
+app.listen(port, "0.0.0.0", () => {
+  console.log(`HerdShare API listening on http://0.0.0.0:${port}`);
   console.log(`OpenAPI docs at http://localhost:${port}/api/docs`);
 });
