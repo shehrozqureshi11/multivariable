@@ -29,19 +29,22 @@ export function AnimalCard({ animal }: { animal: Animal }) {
           ) : null}
         </div>
         <div className="card-body">
-          <p className="eyebrow">{animal.species}</p>
+          <div className="card-top">
+            <p className="eyebrow">{animal.species}</p>
+            {animal.expectedRoiPercent ? (
+              <span className="badge badge-green">
+                Est. ROI {animal.expectedRoiPercent}%
+              </span>
+            ) : null}
+          </div>
           <h3 style={{ margin: 0 }}>{animal.name}</h3>
           <p className="meta">
             {animal.farm.name} · {animal.farm.city}
           </p>
           <p className="price">
-            {formatPkr(animal.sharePricePkr || animal.pricePkr)} / share
+            {formatPkr(animal.sharePricePkr || animal.pricePkr)}{" "}
+            <span className="price-unit">/ share</span>
           </p>
-          {animal.expectedRoiPercent ? (
-            <span className="badge badge-green">
-              Est. ROI {animal.expectedRoiPercent}%
-            </span>
-          ) : null}
         </div>
       </Link>
     </article>

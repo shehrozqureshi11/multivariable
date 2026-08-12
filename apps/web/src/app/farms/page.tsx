@@ -16,17 +16,22 @@ export default async function FarmsPage() {
   const farms = res.success ? res.data || [] : [];
 
   return (
-    <section className="section">
+    <section className="section" style={{ paddingTop: "1.5rem" }}>
       <div className="container">
-        <div className="section-head">
-          <div>
-            <h1>Verified farms</h1>
-            <p>Only approved farms appear on the public directory.</p>
-          </div>
+        <div className="page-banner fade-up">
+          <p className="eyebrow">Partners</p>
+          <h1>Verified farms</h1>
+          <p className="meta" style={{ maxWidth: "42ch", marginTop: "0.5rem" }}>
+            Only approved farms appear on the public directory — with listings you
+            can invest in and track.
+          </p>
         </div>
-        <div className="grid grid-2">
-          {farms.map((farm) => (
-            <article key={farm.id} className="farm-card fade-in">
+        <div className="grid grid-2" style={{ marginTop: "2rem" }}>
+          {farms.map((farm, i) => (
+            <article
+              key={farm.id}
+              className={`farm-card fade-up delay-${Math.min(i % 4, 3)}`}
+            >
               <Link href={`/farms/${farm.slug}`}>
                 <div className="card-media">
                   {farm.imageUrl ? (
@@ -50,7 +55,9 @@ export default async function FarmsPage() {
                   ) : null}
                 </div>
                 <div className="card-body">
-                  <h2 style={{ margin: "0 0 0.35rem", fontSize: "1.4rem" }}>{farm.name}</h2>
+                  <h2 style={{ margin: "0 0 0.35rem", fontSize: "1.4rem" }}>
+                    {farm.name}
+                  </h2>
                   <p className="meta">
                     {farm.city}, {farm.province}
                     {farm._count ? ` · ${farm._count.animals} animals` : ""}
@@ -61,6 +68,9 @@ export default async function FarmsPage() {
             </article>
           ))}
         </div>
+        {!farms.length ? (
+          <p className="meta">No verified farms yet.</p>
+        ) : null}
       </div>
     </section>
   );

@@ -11,39 +11,63 @@ export const metadata: Metadata = {
 
 export const revalidate = 30;
 
+const FILTERS = [
+  { value: "", label: "All" },
+  { value: "GOAT", label: "Goats" },
+  { value: "SHEEP", label: "Sheep" },
+  { value: "COW", label: "Cows" },
+] as const;
+
 export default async function MarketplacePage({
   searchParams,
 }: {
   searchParams: Promise<{ species?: string }>;
 }) {
   const sp = await searchParams;
-  const qs = sp.species ? `?species=${sp.species}&limit=24` : "?limit=24";
+  const active = (sp.species || "").toUpperCase();
+  const qs = active ? `?species=${active}&limit=24` : "?limit=24";
   const res = await apiFetch<Animal[]>(`/animals${qs}`, { revalidate: 30 });
   const animals = res.success ? res.data || [] : [];
 
   return (
-    <section className="section">
+    <section className="section" style={{ paddingTop: "1.5rem" }}>
       <div className="container">
-        <div className="section-head">
+        <div className="page-banner fade-up">
+          <p className="eyebrow">Invest with clarity</p>
+          <h1>Marketplace</h1>
+          <p className="meta" style={{ maxWidth: "42ch", marginTop: "0.5rem" }}>
+            Verified goats, sheep, and cows from approved farms — priced in PKR
+            with share ownership you can track.
+          </p>
+        </div>
+        <div className="section-head" style={{ marginTop: "1.75rem" }}>
           <div>
-            <h1>Marketplace</h1>
-            <p>Choose a species or browse all verified listings.</p>
+            <p className="meta" style={{ margin: 0 }}>
+              {animals.length
+                ? `${animals.length} listing${animals.length === 1 ? "" : "s"}`
+                : "No listings yet"}
+            </p>
           </div>
-          <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-            {["", "GOAT", "SHEEP", "COW"].map((s) => (
-              <a
-                key={s || "all"}
-                className="btn btn-secondary"
-                href={s ? `/marketplace?species=${s}` : "/marketplace"}
-              >
-                {s || "All"}
-              </a>
-            ))}
+          <div className="filter-chips">
+            {FILTERS.map((f) => {
+              const isActive = active === f.value;
+              return (
+                <a
+                  key={f.label}
+                  className={`filter-chip${isActive ? " is-active" : ""}`}
+                  href={f.value ? `/marketplace?species=${f.value}` : "/marketplace"}
+                >
+                  {f.label}
+                </a>
+              );
+            })}
           </div>
         </div>
         <div className="grid grid-3">
-          {animals.map((a) => (
-            <AnimalCard key={a.id} animal={a} />
+          {animals.map((a, i) => (
+            <div key={a.id} className={`fade-up delay-${Math.min(i % 4, 3)}`}>
+              <AnimalCard animal={a} />
+            </div>
           ))}
         </div>
         {!animals.length ? (

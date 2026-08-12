@@ -56,6 +56,7 @@ export default function LoginClient() {
   return (
     <div className="auth-shell container">
       <div className="auth-card">
+        <p className="eyebrow">Welcome back</p>
         <h1>Log in</h1>
         <p className="meta">
           Investor demo: investor@herdshare.pk / Password123!
