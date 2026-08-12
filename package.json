@@ -11,6 +11,7 @@
     "dev:api": "npm run dev -w @herdshare/api",
     "dev:web": "npm run dev -w @herdshare/web",
     "build": "npm run build -w @herdshare/shared && npm run build -w @herdshare/api && npm run build -w @herdshare/web",
+    "vercel-build": "npm run build -w @herdshare/shared && npm run build -w @herdshare/web",
     "db:generate": "npm run db:generate -w @herdshare/api",
     "db:migrate": "npm run db:migrate -w @herdshare/api",
     "db:seed": "npm run db:seed -w @herdshare/api",
