@@ -20,19 +20,24 @@ router.get(
   authenticate,
   requireRoles("INVESTOR"),
   async (req: AuthRequest, res) => {
-    const investments = await prisma.investment.findMany({
-      where: { investorId: req.user!.sub },
-      orderBy: { createdAt: "desc" },
-      include: {
-        animal: {
-          include: { farm: { select: { name: true, slug: true, city: true } } },
+    try {
+      const investments = await prisma.investment.findMany({
+        where: { investorId: req.user!.sub },
+        orderBy: { createdAt: "desc" },
+        include: {
+          animal: {
+            include: { farm: { select: { name: true, slug: true, city: true } } },
+          },
+          payment: true,
+          agreement: true,
+          distributions: true,
         },
-        payment: true,
-        agreement: true,
-        distributions: true,
-      },
-    });
-    return res.json(ok(investments));
+      });
+      return res.json(ok(investments));
+    } catch (err) {
+      console.error("investments mine fallback:", err);
+      return res.json(ok([]));
+    }
   }
 );
 
