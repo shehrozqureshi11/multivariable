@@ -50,13 +50,16 @@ API docs (OpenAPI / Swagger): http://localhost:4000/api/docs
 ### Deploy web on Vercel
 
 1. Import the GitHub repo in Vercel.
-2. Set **Root Directory** to `apps/web` (Project Settings → General).
-3. Framework: Next.js (auto).
-4. Env vars for the web app:
+2. Set **Root Directory** to `apps/web` (Project Settings → General) — required.
+3. Framework Preset: **Next.js** (auto).
+4. Leave Build Command empty (uses `next build`). Install uses monorepo root via `apps/web/vercel.json`.
+5. Env vars for the web app:
    - `NEXT_PUBLIC_API_URL` — your hosted API base, e.g. `https://api.example.com/api/v1`
    - `NEXT_PUBLIC_SITE_URL` — your Vercel URL, e.g. `https://your-app.vercel.app`
    - `NEXT_PUBLIC_SITE_NAME` — `HerdShare`
-5. Redeploy. Build uses `vercel-build` (shared + web only — **not** the Express API).
+6. Redeploy.
+
+If you see **“No entrypoint found”**, Root Directory is wrong (must be `apps/web`) or Framework is not Next.js.
 
 ### Deploy API (Railway / Render)
 
@@ -71,7 +74,7 @@ Short version (Railway):
 NEXT_PUBLIC_API_URL=https://YOUR-RAILWAY-DOMAIN/api/v1
 ```
 
-Host the Express API separately (Railway, Render, Fly.io, or a VPS). Vercel is for the Next.js frontend.
+Vercel hosts the Next.js frontend only. The Express API runs on Railway/Render.
 
 ### Local Postgres fallback (no Supabase)
 
