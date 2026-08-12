@@ -1,9 +1,5 @@
 # Railway — HerdShare API
-#
-# IMPORTANT (fixes "@herdshare/shared" build errors):
-# 1. Service Root Directory must be EMPTY / repo root (not apps/api)
-# 2. Settings → Build → Builder = Dockerfile
-# 3. Dockerfile path = apps/api/Dockerfile
+# Root Directory must be empty (repo root). Builder = Dockerfile.
 
 [build]
 builder = "DOCKERFILE"

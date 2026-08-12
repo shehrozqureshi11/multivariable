@@ -21,13 +21,21 @@ import adminRoutes from "./routes/admin";
 import notificationRoutes from "./routes/notifications";
 import reportRoutes from "./routes/reports";
 
+const corsOrigins = (
+  process.env.CORS_ORIGIN ||
+  "http://localhost:3000,https://multivariable-api-git-main-sheriii.vercel.app"
+)
+  .split(",")
+  .map((s) => s.trim())
+  .filter(Boolean);
+
 const app = express();
 const port = Number(process.env.PORT || process.env.API_PORT || 4000);
 
 app.use(helmet());
 app.use(
   cors({
-    origin: process.env.CORS_ORIGIN?.split(",") || ["http://localhost:3000"],
+    origin: corsOrigins,
     credentials: true,
   })
 );

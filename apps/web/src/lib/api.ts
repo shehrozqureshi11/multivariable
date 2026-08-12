@@ -1,5 +1,13 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:4000/api/v1";
-export const SITE_URL = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+const API_URL =
+  process.env.NEXT_PUBLIC_API_URL ||
+  (process.env.VERCEL
+    ? "https://herdshareapi-production.up.railway.app/api/v1"
+    : "http://localhost:4000/api/v1");
+export const SITE_URL =
+  process.env.NEXT_PUBLIC_SITE_URL ||
+  (process.env.VERCEL
+    ? "https://multivariable-api-git-main-sheriii.vercel.app"
+    : "http://localhost:3000");
 export const SITE_NAME = process.env.NEXT_PUBLIC_SITE_NAME || "HerdShare";
 
 export type ApiResponse<T> = {

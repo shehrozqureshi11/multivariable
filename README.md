@@ -18,9 +18,8 @@ Transparent livestock investment platform connecting investors with verified far
 ### 1. Supabase database
 
 1. Create a project at [supabase.com](https://supabase.com)
-2. Copy **Session/Transaction pooler** URL → `DATABASE_URL`
-3. Copy **Direct** connection URL → `DIRECT_URL`
-4. Copy `.env.example` → `.env` and fill values
+2. Copy the **Connection string (URI)** → `DATABASE_URL`
+3. Copy `.env.example` → `.env` and fill values
 
 ```bash
 cp .env.example .env
@@ -52,35 +51,24 @@ API docs (OpenAPI / Swagger): http://localhost:4000/api/docs
 1. Import the GitHub repo in Vercel.
 2. Set **Root Directory** to `apps/web` (Project Settings → General) — required.
 3. Framework Preset: **Next.js** (auto).
-4. Leave Build Command empty (uses `next build`). Install uses monorepo root via `apps/web/vercel.json`.
-5. Env vars for the web app:
-   - `NEXT_PUBLIC_API_URL` — your hosted API base, e.g. `https://api.example.com/api/v1`
-   - `NEXT_PUBLIC_SITE_URL` — your Vercel URL, e.g. `https://your-app.vercel.app`
-   - `NEXT_PUBLIC_SITE_NAME` — `HerdShare`
-6. Redeploy.
+4. Leave Build Command empty (or use `apps/web/vercel.json`, which already points at the Railway API).
+5. Redeploy.
 
 If you see **“No entrypoint found”**, Root Directory is wrong (must be `apps/web`) or Framework is not Next.js.
 
 ### Deploy API (Railway / Render)
 
-See **[docs/api-deploy.md](docs/api-deploy.md)** for full steps.
+See **[docs/api-deploy.md](docs/api-deploy.md)**.
 
-Short version (Railway):
-1. Deploy this repo on Railway (uses `railway.toml` + `apps/api/Dockerfile`).
-2. Set `DATABASE_URL`, `DIRECT_URL`, JWT secrets, and `CORS_ORIGIN` (your Vercel URL).
-3. Generate a public domain, then set on Vercel:
+Railway uses `apps/api/Dockerfile` (listens on `PORT`, default **8080**). JWT and CORS have production defaults. You only need `DATABASE_URL` on Railway if listings are empty.
 
-```text
-NEXT_PUBLIC_API_URL=https://YOUR-RAILWAY-DOMAIN/api/v1
-```
-
-Vercel hosts the Next.js frontend only. The Express API runs on Railway/Render.
+Vercel hosts the Next.js frontend. The Express API runs on Railway.
 
 ### Local Postgres fallback (no Supabase)
 
 ```bash
 docker compose --profile local-db up -d postgres
-# set DATABASE_URL and DIRECT_URL to local connection in .env
+# set DATABASE_URL to local connection in .env
 ```
 
 ## Demo accounts (after seed)

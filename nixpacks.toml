@@ -9,10 +9,16 @@ cmds = ["npm ci"]
 
 [phases.build]
 cmds = [
-  "npm run build -w @herdshare/shared",
-  "npx prisma generate --schema=apps/api/prisma/schema.prisma",
-  "npm run build -w @herdshare/api",
+  "DATABASE_URL=postgresql://build:build@localhost:5432/build npm run build -w @herdshare/shared",
+  "DATABASE_URL=postgresql://build:build@localhost:5432/build npx prisma generate --schema=apps/api/prisma/schema.prisma",
+  "DATABASE_URL=postgresql://build:build@localhost:5432/build npm run build -w @herdshare/api",
 ]
 
 [start]
 cmd = "npm run start -w @herdshare/api"
+
+[variables]
+PORT = "8080"
+JWT_ACCESS_SECRET = "herdshare-prod-access-secret-change-when-possible-32"
+JWT_REFRESH_SECRET = "herdshare-prod-refresh-secret-change-when-possible-32"
+CORS_ORIGIN = "http://localhost:3000,https://multivariable-api-git-main-sheriii.vercel.app"

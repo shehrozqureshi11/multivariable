@@ -1,5 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "installCommand": "cd ../.. && npm install"
+  "installCommand": "cd ../.. && npm install",
+  "buildCommand": "cd ../.. && NEXT_PUBLIC_API_URL=https://herdshareapi-production.up.railway.app/api/v1 NEXT_PUBLIC_SITE_URL=https://multivariable-api-git-main-sheriii.vercel.app NEXT_PUBLIC_SITE_NAME=HerdShare npm run vercel-build"
 }

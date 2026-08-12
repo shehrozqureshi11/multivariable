@@ -12,24 +12,15 @@ services:
     envVars:
       - key: NODE_ENV
         value: production
-      - key: API_PORT
-        value: "4000"
-      # Set these in the Render dashboard (do not commit secrets):
-      # DATABASE_URL, DIRECT_URL, JWT_ACCESS_SECRET, JWT_REFRESH_SECRET, CORS_ORIGIN
+      - key: PORT
+        value: "8080"
       - key: DATABASE_URL
-        sync: false
-      - key: DIRECT_URL
-        sync: false
-      - key: JWT_ACCESS_SECRET
-        sync: false
-      - key: JWT_REFRESH_SECRET
         sync: false
       - key: JWT_ACCESS_EXPIRES
         value: 15m
       - key: JWT_REFRESH_EXPIRES
         value: 7d
       - key: CORS_ORIGIN
-        sync: false
-      # Optional — leave unset if you have no Redis
+        value: http://localhost:3000,https://multivariable-api-git-main-sheriii.vercel.app
       - key: REDIS_URL
         sync: false
