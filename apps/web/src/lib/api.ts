@@ -1,13 +1,16 @@
-function resolveApiUrl() {
-  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
-  // Prefer Railway when available; fall back to same-origin Vercel routes.
-  if (process.env.VERCEL) {
-    return "https://herdshareapi-production.up.railway.app/api/v1";
+function getApiUrl() {
+  // Browser: always call same-origin Next.js /api/v1 (avoids CORS/Helmet blocks).
+  if (typeof window !== "undefined") {
+    return `${window.location.origin}/api/v1`;
   }
-  return "http://localhost:4000/api/v1";
+  if (process.env.NEXT_PUBLIC_API_URL) return process.env.NEXT_PUBLIC_API_URL;
+  if (process.env.VERCEL_URL) return `https://${process.env.VERCEL_URL}/api/v1`;
+  if (process.env.VERCEL) {
+    return "https://multivariable-api-git-main-sheriii.vercel.app/api/v1";
+  }
+  return "http://localhost:3000/api/v1";
 }
 
-const API_URL = resolveApiUrl();
 export const SITE_URL =
   process.env.NEXT_PUBLIC_SITE_URL ||
   (process.env.VERCEL_URL
@@ -34,6 +37,7 @@ export async function apiFetch<T>(
   if (token) headers.set("Authorization", `Bearer ${token}`);
 
   const isServer = typeof window === "undefined";
+  const API_URL = getApiUrl();
   try {
     const res = await fetch(`${API_URL}${path}`, {
       ...init,
@@ -44,13 +48,23 @@ export async function apiFetch<T>(
         : {}),
     });
     if (!res.ok) {
-      return {
-        success: false,
-        error: {
-          code: `HTTP_${res.status}`,
-          message: `API returned ${res.status}`,
-        },
-      };
+      let message = `API returned ${res.status}`;
+      try {
+        const body = await res.json();
+        if (body?.error?.message) message = body.error.message;
+        return {
+          success: false,
+          error: {
+            code: body?.error?.code || `HTTP_${res.status}`,
+            message,
+          },
+        };
+      } catch {
+        return {
+          success: false,
+          error: { code: `HTTP_${res.status}`, message },
+        };
+      }
     }
     return res.json();
   } catch {

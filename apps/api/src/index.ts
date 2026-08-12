@@ -32,10 +32,25 @@ const corsOrigins = (
 const app = express();
 const port = Number(process.env.PORT || process.env.API_PORT || 4000);
 
-app.use(helmet());
+app.use(
+  helmet({
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    crossOriginOpenerPolicy: { policy: "same-origin-allow-popups" },
+  })
+);
 app.use(
   cors({
-    origin: corsOrigins,
+    origin: (origin, cb) => {
+      if (!origin) return cb(null, true);
+      if (
+        corsOrigins.includes(origin) ||
+        /\.vercel\.app$/i.test(origin) ||
+        /localhost|127\.0\.0\.1/i.test(origin)
+      ) {
+        return cb(null, origin);
+      }
+      return cb(null, false);
+    },
     credentials: true,
   })
 );
