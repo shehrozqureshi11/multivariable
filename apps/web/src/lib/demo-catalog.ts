@@ -14,7 +14,7 @@ export const DEMO_FARMS: Farm[] = [
     imageUrl: "/images/farms/green-pastures.jpg",
     status: "APPROVED",
     owner: { fullName: "Imran Malik" },
-    _count: { animals: 7, reviews: 0 },
+    _count: { animals: 6, reviews: 0 },
   },
   {
     id: "demo-farm-2",
@@ -28,7 +28,7 @@ export const DEMO_FARMS: Farm[] = [
     imageUrl: "/images/farms/indus-valley.jpg",
     status: "APPROVED",
     owner: { fullName: "Sara Ahmed" },
-    _count: { animals: 7, reviews: 0 },
+    _count: { animals: 4, reviews: 0 },
   },
 ];
 

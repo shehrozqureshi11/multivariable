@@ -3,15 +3,17 @@ import Image from "next/image";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AnimalCard } from "@/components/AnimalCard";
-import { apiFetch, Animal, Farm, SITE_URL } from "@/lib/api";
+import { SITE_URL } from "@/lib/api";
+import { getFarmBySlug } from "@/lib/catalog";
 
 type Props = { params: Promise<{ slug: string }> };
 
+export const revalidate = 60;
+
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const { slug } = await params;
-  const res = await apiFetch<Farm>(`/farms/${slug}`, { revalidate: 60 });
-  if (!res.success || !res.data) return { title: "Farm" };
-  const farm = res.data;
+  const { farm } = await getFarmBySlug(slug);
+  if (!farm) return { title: "Farm" };
   return {
     title: farm.name,
     description: farm.description || `${farm.name} in ${farm.city}, ${farm.province}`,
@@ -27,11 +29,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function FarmDetailPage({ params }: Props) {
   const { slug } = await params;
-  const res = await apiFetch<Farm & { animals: Animal[] }>(`/farms/${slug}`, {
-    revalidate: 60,
-  });
-  if (!res.success || !res.data) notFound();
-  const farm = res.data;
+  const { farm } = await getFarmBySlug(slug);
+  if (!farm) notFound();
+
+  const animals = farm.animals || [];
 
   const jsonLd = {
     "@context": "https://schema.org",
@@ -81,10 +82,25 @@ export default async function FarmDetailPage({ params }: Props) {
         </div>
         <h2>Available livestock</h2>
         <div className="grid grid-3">
-          {(farm.animals || []).map((a) => (
-            <AnimalCard key={a.id} animal={{ ...a, farm: { id: farm.id, name: farm.name, slug: farm.slug, city: farm.city, province: farm.province } }} />
+          {animals.map((a) => (
+            <AnimalCard
+              key={a.id}
+              animal={{
+                ...a,
+                farm: {
+                  id: farm.id,
+                  name: farm.name,
+                  slug: farm.slug,
+                  city: farm.city,
+                  province: farm.province,
+                },
+              }}
+            />
           ))}
         </div>
+        {!animals.length ? (
+          <p className="meta">No livestock listed for this farm yet.</p>
+        ) : null}
       </div>
     </section>
   );
