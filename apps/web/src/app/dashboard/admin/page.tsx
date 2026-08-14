@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
 import { DashboardShell } from "@/components/DashboardShell";
-import { apiFetch, formatPkr } from "@/lib/api";
+import { apiFetch, Farm, formatPkr } from "@/lib/api";
 import { loadAuth } from "@/lib/auth";
 
 export default function AdminDashboard() {
@@ -18,6 +19,7 @@ export default function AdminDashboard() {
   const [pendingFarms, setPendingFarms] = useState<
     { id: string; name: string; city: string; owner: { fullName: string; email: string } }[]
   >([]);
+  const [activeFarms, setActiveFarms] = useState<Farm[]>([]);
   const [logs, setLogs] = useState<
     { id: string; action: string; entityType: string; createdAt: string; actor?: { fullName: string } | null }[]
   >([]);
@@ -30,14 +32,18 @@ export default function AdminDashboard() {
     const auth = loadAuth();
     if (!auth) return;
     const token = auth.accessToken;
-    const [s, f, a, d] = await Promise.all([
+    const [s, f, farms, a, d] = await Promise.all([
       apiFetch<typeof stats>("/admin/stats", { token, revalidate: false }),
       apiFetch<typeof pendingFarms>("/admin/farms/pending", { token, revalidate: false }),
+      apiFetch<Farm[]>("/farms?limit=50", { revalidate: false }),
       apiFetch<typeof logs>("/admin/audit-logs?limit=30", { token, revalidate: false }),
       apiFetch<typeof disputes>("/admin/disputes", { token, revalidate: false }),
     ]);
     if (s.success) setStats(s.data || null);
     if (f.success) setPendingFarms(f.data || []);
+    if (farms.success) {
+      setActiveFarms((farms.data || []).filter((fm) => fm.status === "APPROVED"));
+    }
     if (a.success) setLogs(a.data || []);
     if (d.success) setDisputes(d.data || []);
   }
@@ -67,6 +73,10 @@ export default function AdminDashboard() {
         <div className="stat">
           <span className="meta">Users</span>
           <strong>{stats?.users ?? 0}</strong>
+        </div>
+        <div className="stat">
+          <span className="meta">Active farms</span>
+          <strong>{stats?.farmsApproved ?? activeFarms.length}</strong>
         </div>
         <div className="stat">
           <span className="meta">Pending farms</span>
@@ -116,6 +126,43 @@ export default function AdminDashboard() {
           </tbody>
         </table>
         {!pendingFarms.length ? <p className="meta">No farms awaiting review.</p> : null}
+      </div>
+
+      <div className="panel" style={{ marginBottom: "1rem" }}>
+        <h2 style={{ marginTop: 0, fontSize: "1.25rem" }}>Active farms</h2>
+        <table className="table">
+          <thead>
+            <tr>
+              <th>Farm</th>
+              <th>Owner</th>
+              <th>City</th>
+              <th>Animals</th>
+              <th>Status</th>
+              <th />
+            </tr>
+          </thead>
+          <tbody>
+            {activeFarms.map((f) => (
+              <tr key={f.id}>
+                <td>{f.name}</td>
+                <td>{f.owner?.fullName || "—"}</td>
+                <td>
+                  {f.city}, {f.province}
+                </td>
+                <td>{f._count?.animals ?? 0}</td>
+                <td>
+                  <span className="badge badge-green">{f.status}</span>
+                </td>
+                <td>
+                  <Link href={`/farms/${f.slug}`} className="btn btn-secondary">
+                    View
+                  </Link>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {!activeFarms.length ? <p className="meta">No active farms yet.</p> : null}
       </div>
 
       <div className="grid grid-2">
