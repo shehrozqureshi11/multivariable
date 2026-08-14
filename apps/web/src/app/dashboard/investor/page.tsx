@@ -85,7 +85,7 @@ export default function InvestorDashboard() {
           <strong>{formatPkr(stats?.totalInvested || 0)}</strong>
         </div>
         <div className="stat">
-          <span className="meta">Profit received</span>
+          <span className="meta">Projected profit</span>
           <strong>{formatPkr(stats?.totalProfit || 0)}</strong>
         </div>
         <div className="stat">

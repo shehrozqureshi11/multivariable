@@ -1,4 +1,10 @@
-import { fail, ok, parseDemoToken } from "../../_lib";
+import {
+  fail,
+  okWithPortfolio,
+  parseDemoToken,
+  readPortfolio,
+  walletFromPortfolio,
+} from "../../_lib";
 
 export async function POST(req: Request) {
   const user = parseDemoToken(req.headers.get("authorization"));
@@ -11,8 +17,18 @@ export async function POST(req: Request) {
     return fail("VALIDATION_ERROR", "Invalid body");
   }
   if (amount <= 0) return fail("VALIDATION_ERROR", "amountPkr must be positive");
-  return ok({
-    balancePkr: 500000 + amount,
-    txns: [],
-  });
+
+  const portfolio = await readPortfolio();
+  const next = {
+    ...portfolio,
+    deposits: [
+      ...portfolio.deposits,
+      {
+        id: `demo-dep-${Date.now()}`,
+        amountPkr: amount,
+        createdAt: new Date().toISOString(),
+      },
+    ],
+  };
+  return okWithPortfolio(walletFromPortfolio(next), next);
 }

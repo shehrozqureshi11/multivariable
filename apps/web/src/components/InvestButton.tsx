@@ -1,10 +1,12 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { apiFetch } from "@/lib/api";
+import { apiFetch, formatPkr } from "@/lib/api";
 import { loadAuth } from "@/lib/auth";
+
+type Confirmation = { shares: number; amountPkr: number };
 
 export function InvestButton({
   animalId,
@@ -19,27 +21,37 @@ export function InvestButton({
   const pathname = usePathname();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-  const [done, setDone] = useState(false);
+  const [needsLogin, setNeedsLogin] = useState(false);
+  const [done, setDone] = useState<Confirmation | null>(null);
 
   const returnPath = animalSlug
     ? `/animals/${animalSlug}`
     : pathname || "/marketplace";
 
+  useEffect(() => {
+    if (!done) return;
+    const t = setTimeout(() => router.push("/dashboard/investor"), 1600);
+    return () => clearTimeout(t);
+  }, [done, router]);
+
   async function invest() {
     setError("");
+    setNeedsLogin(false);
     const auth = loadAuth();
     if (!auth) {
+      setNeedsLogin(true);
       setError("Please log in as an investor first to invest in a share.");
       return;
     }
     if (auth.user.role !== "INVESTOR") {
+      setNeedsLogin(true);
       setError(
         "Only investor accounts can fund livestock shares. Log in with an investor account."
       );
       return;
     }
     setLoading(true);
-    const res = await apiFetch("/investments", {
+    const res = await apiFetch<Confirmation>("/investments", {
       method: "POST",
       token: auth.accessToken,
       revalidate: false,
@@ -50,12 +62,11 @@ export function InvestButton({
       }),
     });
     setLoading(false);
-    if (!res.success) {
-      setError(res.error?.message || "Investment failed");
+    if (!res.success || !res.data) {
+      setError(res.error?.message || "Investment failed. Please try again.");
       return;
     }
-    setDone(true);
-    router.push("/dashboard/investor");
+    setDone({ shares: res.data.shares, amountPkr: res.data.amountPkr });
   }
 
   const loginHref = `/login?next=${encodeURIComponent(returnPath)}&role=INVESTOR&msg=${encodeURIComponent(
@@ -66,7 +77,7 @@ export function InvestButton({
     <div style={{ marginTop: "1rem" }}>
       <button
         className="btn btn-primary"
-        disabled={disabled || loading}
+        disabled={disabled || loading || Boolean(done)}
         onClick={invest}
       >
         {loading ? "Processing…" : "Invest 1 share"}
@@ -74,7 +85,7 @@ export function InvestButton({
       {error ? (
         <div className="error" style={{ marginTop: "0.75rem" }}>
           <p style={{ margin: "0 0 0.5rem" }}>{error}</p>
-          {!loadAuth() || loadAuth()?.user.role !== "INVESTOR" ? (
+          {needsLogin ? (
             <Link href={loginHref} className="btn btn-accent">
               Log in as investor
             </Link>
@@ -82,9 +93,13 @@ export function InvestButton({
         </div>
       ) : null}
       {done ? (
-        <p className="success" style={{ marginTop: "0.75rem" }}>
-          Investment confirmed.
-        </p>
+        <div className="success" style={{ marginTop: "0.75rem" }}>
+          <p style={{ margin: "0 0 0.5rem" }}>
+            Investment confirmed — {done.shares} share for{" "}
+            {formatPkr(done.amountPkr)}. Taking you to your portfolio…
+          </p>
+          <Link href="/dashboard/investor">View portfolio now</Link>
+        </div>
       ) : null}
     </div>
   );

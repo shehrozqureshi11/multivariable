@@ -286,6 +286,10 @@ export function getDemoAnimal(slug: string): Animal | undefined {
   return DEMO_ANIMALS.find((a) => a.slug === slug);
 }
 
+export function getDemoAnimalById(id: string): Animal | undefined {
+  return DEMO_ANIMALS.find((a) => a.id === id);
+}
+
 export function getDemoFarm(slug: string): Farm | undefined {
   const farm = DEMO_FARMS.find((f) => f.slug === slug);
   if (!farm) return undefined;

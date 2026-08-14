@@ -80,6 +80,9 @@ export default async function AnimalDetailPage({ params }: Props) {
           <p className="price">
             {formatPkr(animal.sharePricePkr || animal.pricePkr)} / share
           </p>
+          <p className="price-note">
+            Price depends on the live livestock market rate at the time of sale.
+          </p>
           <p>
             {animal.availableShares} of {animal.totalShares} shares available
             {animal.expectedRoiPercent
@@ -90,11 +93,12 @@ export default async function AnimalDetailPage({ params }: Props) {
           <InvestButton
             animalId={animal.id}
             animalSlug={animal.slug}
-            disabled={animal.availableShares < 1 || animal.id.startsWith("demo-")}
+            disabled={animal.availableShares < 1}
           />
           {animal.id.startsWith("demo-") ? (
             <p className="meta" style={{ marginTop: "0.75rem" }}>
-              Demo listing — connect the API database to enable live investing.
+              Demo listing — investments are simulated and saved to your browser
+              until the live database is connected.
             </p>
           ) : null}
           <div style={{ marginTop: "2rem" }}>

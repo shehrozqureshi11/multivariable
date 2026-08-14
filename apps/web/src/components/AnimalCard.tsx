@@ -45,6 +45,7 @@ export function AnimalCard({ animal }: { animal: Animal }) {
             {formatPkr(animal.sharePricePkr || animal.pricePkr)}{" "}
             <span className="price-unit">/ share</span>
           </p>
+          <p className="price-note">Price depends on the market rate.</p>
         </div>
       </Link>
     </article>
