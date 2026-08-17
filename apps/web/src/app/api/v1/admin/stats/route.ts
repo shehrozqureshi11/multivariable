@@ -7,14 +7,15 @@ export async function GET(req: Request) {
   if (user.role !== "ADMIN") return fail("FORBIDDEN", "Admin only", 403);
 
   const { investments } = await readPortfolio();
-  const volumePkr = investments.reduce((sum, i) => sum + i.amountPkr, 0);
+  const active = investments.filter((i) => !i.status || i.status === "ACTIVE");
+  const volumePkr = active.reduce((sum, i) => sum + i.amountPkr, 0);
 
   return ok({
     users: DEMO_USERS.length,
     farmsPending: 0,
     farmsApproved: DEMO_FARMS.filter((f) => f.status === "APPROVED").length,
     animals: DEMO_ANIMALS.length,
-    investments: investments.length,
+    investments: active.length,
     volumePkr,
     openDisputes: 0,
   });

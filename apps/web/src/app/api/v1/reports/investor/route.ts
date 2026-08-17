@@ -6,15 +6,16 @@ export async function GET(req: Request) {
   if (!user) return fail("UNAUTHORIZED", "Missing access token", 401);
 
   const { investments } = await readPortfolio();
-  const totalInvested = investments.reduce((sum, i) => sum + i.amountPkr, 0);
+  const active = investments.filter((i) => !i.status || i.status === "ACTIVE");
+  const totalInvested = active.reduce((sum, i) => sum + i.amountPkr, 0);
   // Projected payout on the demo listings, not realised profit.
-  const totalProfit = investments.reduce((sum, i) => {
+  const totalProfit = active.reduce((sum, i) => {
     const roi = getDemoAnimal(i.animalSlug)?.expectedRoiPercent || 0;
     return sum + Math.round((i.amountPkr * roi) / 100);
   }, 0);
 
   return ok({
-    activeInvestments: investments.length,
+    activeInvestments: active.length,
     totalInvested,
     totalProfit,
   });

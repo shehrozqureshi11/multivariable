@@ -103,6 +103,8 @@ export type DemoInvestment = {
   animalSlug: string;
   shares: number;
   amountPkr: number;
+  arrangement?: "FARM_PURCHASES" | "INVESTOR_PROVIDES";
+  status?: "ACTIVE" | "PENDING_DISCUSSION";
   createdAt: string;
 };
 
@@ -145,7 +147,10 @@ export function okWithPortfolio<T>(data: T, portfolio: DemoPortfolio) {
 
 export function walletFromPortfolio(portfolio: DemoPortfolio) {
   const deposited = portfolio.deposits.reduce((sum, d) => sum + d.amountPkr, 0);
-  const invested = portfolio.investments.reduce((sum, i) => sum + i.amountPkr, 0);
+  const completedInvestments = portfolio.investments.filter(
+    (i) => !i.status || i.status === "ACTIVE"
+  );
+  const invested = completedInvestments.reduce((sum, i) => sum + i.amountPkr, 0);
   const txns = [
     {
       id: "demo-txn-opening",
@@ -161,7 +166,7 @@ export function walletFromPortfolio(portfolio: DemoPortfolio) {
       note: "Mock deposit",
       createdAt: d.createdAt,
     })),
-    ...portfolio.investments.map((i) => ({
+    ...completedInvestments.map((i) => ({
       id: `txn-${i.id}`,
       type: "INVESTMENT",
       amountPkr: i.amountPkr,
@@ -184,7 +189,8 @@ export function hydrateInvestments(portfolio: DemoPortfolio) {
         id: i.id,
         shares: i.shares,
         amountPkr: i.amountPkr,
-        status: "ACTIVE",
+        arrangement: i.arrangement || "FARM_PURCHASES",
+        status: i.status || "ACTIVE",
         createdAt: i.createdAt,
         animal: {
           name: animal?.name || i.animalSlug,

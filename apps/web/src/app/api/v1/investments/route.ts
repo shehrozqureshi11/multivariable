@@ -5,7 +5,6 @@ import {
   parseDemoToken,
   readPortfolio,
   sharesHeld,
-  walletFromPortfolio,
 } from "../_lib";
 
 export async function POST(req: Request) {
@@ -17,11 +16,13 @@ export async function POST(req: Request) {
 
   let animalId = "";
   let shares = 1;
+  let arrangement = "";
   let acceptAgreement = false;
   try {
     const body = await req.json();
     animalId = String(body.animalId || "");
     shares = Number(body.shares) || 0;
+    arrangement = String(body.arrangement || "");
     acceptAgreement = Boolean(body.acceptAgreement);
   } catch {
     return fail("VALIDATION_ERROR", "Invalid request body");
@@ -29,6 +30,9 @@ export async function POST(req: Request) {
 
   if (!acceptAgreement) {
     return fail("VALIDATION_ERROR", "You must accept the investment agreement");
+  }
+  if (!["FARM_PURCHASES", "INVESTOR_PROVIDES"].includes(arrangement)) {
+    return fail("VALIDATION_ERROR", "Select a valid purchase arrangement");
   }
   if (shares < 1) return fail("VALIDATION_ERROR", "shares must be at least 1");
 
@@ -49,19 +53,13 @@ export async function POST(req: Request) {
 
   const sharePrice = Number(animal.sharePricePkr || animal.pricePkr);
   const amountPkr = sharePrice * shares;
-  const wallet = walletFromPortfolio(portfolio);
-  if (amountPkr > wallet.balancePkr) {
-    return fail(
-      "INSUFFICIENT_FUNDS",
-      "Not enough wallet balance. Add funds from your dashboard first."
-    );
-  }
-
   const investment = {
     id: `demo-inv-${Date.now()}`,
     animalSlug: animal.slug,
     shares,
     amountPkr,
+    arrangement: arrangement as "FARM_PURCHASES" | "INVESTOR_PROVIDES",
+    status: "PENDING_DISCUSSION" as const,
     createdAt: new Date().toISOString(),
   };
   const next = {
@@ -74,7 +72,8 @@ export async function POST(req: Request) {
       id: investment.id,
       shares,
       amountPkr,
-      status: "ACTIVE",
+      arrangement: investment.arrangement,
+      status: investment.status,
       animal: {
         name: animal.name,
         slug: animal.slug,

@@ -11,6 +11,7 @@ type Investment = {
   shares: number;
   amountPkr: string | number;
   status: string;
+  arrangement: "FARM_PURCHASES" | "INVESTOR_PROVIDES";
   animal: { name: string; slug: string; farm: { name: string } };
 };
 
@@ -129,6 +130,7 @@ export default function InvestorDashboard() {
             <tr>
               <th>Animal</th>
               <th>Farm</th>
+              <th>Arrangement</th>
               <th>Shares</th>
               <th>Amount</th>
               <th>Status</th>
@@ -141,6 +143,11 @@ export default function InvestorDashboard() {
                   <Link href={`/animals/${i.animal.slug}`}>{i.animal.name}</Link>
                 </td>
                 <td>{i.animal.farm.name}</td>
+                <td>
+                  {i.arrangement === "INVESTOR_PROVIDES"
+                    ? "Investor provides animal"
+                    : "Farm purchases animal"}
+                </td>
                 <td>{i.shares}</td>
                 <td>{formatPkr(i.amountPkr)}</td>
                 <td>

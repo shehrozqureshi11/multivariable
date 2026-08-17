@@ -93,12 +93,14 @@ export default async function AnimalDetailPage({ params }: Props) {
           <InvestButton
             animalId={animal.id}
             animalSlug={animal.slug}
+            animalType={animal.species}
+            farmName={animal.farm?.name || "the farm"}
             disabled={animal.availableShares < 1}
           />
           {animal.id.startsWith("demo-") ? (
             <p className="meta" style={{ marginTop: "0.75rem" }}>
-              Demo listing — investments are simulated and saved to your browser
-              until the live database is connected.
+              Demo listing — discussion requests are simulated and saved to your
+              browser until the live database is connected.
             </p>
           ) : null}
           <div style={{ marginTop: "2rem" }}>
